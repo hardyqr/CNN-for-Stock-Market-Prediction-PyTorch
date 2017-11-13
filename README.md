@@ -1,2 +1,1 @@
-# can_machine_reads_like_analysts
-# can_machine_reads_like_analysts
+# Can machine readsl ike analysts do?
