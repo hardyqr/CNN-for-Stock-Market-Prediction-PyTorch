@@ -29,19 +29,21 @@ def get_data(abbv, start, end):
     data = pdr.get_data_yahoo(abbv, start=start, end=end)
     #data['Date'] = data.index
     data.reset_index(inplace=True,drop=False)
-    df = data[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
-    df["Date"] = df["Date"].apply(mdates.date2num)
+    df = data[['Date', 'Open', 'High', 'Low', 'Close']]
+    df["Date"] = df["Date"].apply(mdates.datestr2num)
     return df
 
 def data_plot(data):
     fig, ax = plt.subplots()
     #plt.subplot2grid((6, 4), (1, 0), rowspan=6, colspan=4, axisbg='#07000d')
     candlestick_ohlc(ax, data.values, width=.6, colorup='#53c156', colordown='#ff1717')
-    ax.xaxis_date()
+    #ax.xaxis_date()
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%y-%m-%d'))
+    fig.autofmt_xdate()
     plt.xticks(rotation=45)
     plt.ylabel('Stock Price')
     plt.xlabel('Date')
+    plt.close()
     return fig
 
 def main():
