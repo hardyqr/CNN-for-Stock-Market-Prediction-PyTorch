@@ -12,6 +12,8 @@ from tqdm import *
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.finance import candlestick_ohlc
+import warnings
+warnings.filterwarnings("ignore")
 from data_gen import data_plot
 from utils import one_hot
 
