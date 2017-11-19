@@ -17,14 +17,14 @@ import matplotlib.ticker as mtick
 from matplotlib.finance import candlestick_ohlc
 
 # yahoo data
-from pandas_datareader import data as pdr
-import fix_yahoo_finance as yf
+#from pandas_datareader import data as pdr
+#import fix_yahoo_finance as yf
 
 
-yf.pdr_override() # <== that's all it takes :-)
+#yf.pdr_override() # <== that's all it takes :-)
 
 
-
+'''
 def get_data(abbv, start, end):
     data = pdr.get_data_yahoo(abbv, start=start, end=end)
     #data['Date'] = data.index
@@ -32,6 +32,7 @@ def get_data(abbv, start, end):
     df = data[['Date', 'Open', 'High', 'Low', 'Close']]
     df["Date"] = df["Date"].apply(mdates.datestr2num)
     return df
+'''
 
 def data_plot(data):
     fig, ax = plt.subplots()
@@ -43,14 +44,14 @@ def data_plot(data):
     plt.xticks(rotation=45)
     plt.ylabel('Stock Price')
     plt.xlabel('Date')
-    plt.close()
+    fig.set_size_inches(8,8);
+    #plt.close()
     return fig
 
 def main():
     data = get_data(sys.argv[1], sys.argv[2], sys.argv[3])
     #print(data.head())
     fig = data_plot(data)
-    fig.set_size_inches(20,20);
     #fig.show()
     #os.system('sleep 3s')
     fig.savefig('./data/imgs/' + sys.argv[1]+'_'+sys.argv[2]+'_'+sys.argv[3], dpi=200)

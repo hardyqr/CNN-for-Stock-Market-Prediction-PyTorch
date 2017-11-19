@@ -42,7 +42,7 @@ def main():
         
         # plot
         fig = data_plot(data_cur[0:10]) # only plot the first 10 days
-        fig.set_size_inches(8,8);
+        #fig.set_size_inches(8,8);
         #fig.show()
         file_name = stock_symbol+'_'+str(counter)+'.png'
         fig.savefig('./data/imgs/' + file_name, dpi=40)
