@@ -5,6 +5,7 @@
 
 from __future__ import print_function, division
 import os
+from tqdm import *
 import torch
 import pandas as pd
 from skimage import io, transform
@@ -53,33 +54,11 @@ class stock_img_dataset(Dataset):
 
         return sample
 
-data = stock_img_dataset('./data/label_table.csv', './data/imgs')
-
-fig = plt.figure()
-
 def show_imgs(image, labels):
     """Show image with landmarks"""
     plt.imshow(image)
     #plt.scatter(landmarks[:, 0], landmarks[:, 1], s=10, marker='.', c='r')
     plt.pause(2)  # pause a bit so that plots are updated
-
-
-for i in range(len(data)):
-    sample = data[i]
-
-    print(i, sample['image'].shape, sample['labels'].shape)
-
-    ax = plt.subplot(1, 4, i + 1)
-    plt.tight_layout()
-    ax.set_title('Sample #{}'.format(i))
-    ax.axis('off')
-    show_imgs(**sample)
-
-    if i == 3:
-        plt.show()
-        #os.system('sleep 2s')
-        break
-
 
 class Rescale(object):
     """Rescale the image in a sample to a given size.
@@ -126,8 +105,32 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image),
-                'labels': torch.from_numpy(labels)}
+        return {'image': torch.from_numpy(image).double(),
+                'labels': torch.from_numpy(labels).double()}
+
+
+'''test script'''
+'''
+data = stock_img_dataset('./data/label_table.csv', './data/imgs')
+fig = plt.figure()
+
+for i in range(len(data)):
+    sample = data[i]
+
+    print(i, sample['image'].shape, sample['labels'].shape)
+
+    ax = plt.subplot(1, 4, i + 1)
+    plt.tight_layout()
+    ax.set_title('Sample #{}'.format(i))
+    ax.axis('off')
+    show_imgs(**sample)
+
+    #plt.show()
+    if i == 3:
+        plt.show()
+        #os.system('sleep 2s')
+        break
+
 
 
 scale = Rescale(256)
@@ -146,3 +149,21 @@ for i, tsfrm in enumerate([scale, composed]):
     show_imgs(**transformed_sample)
 
 plt.show()
+'''
+'''data to tensor, and save tensor'''
+'''
+transformed_dataset = stock_img_dataset(csv_file='./data/label_table.csv',
+                                           root_dir='./data/imgs',
+                                           transform=transforms.Compose([
+                                               Rescale(256),
+                                               ToTensor()
+                                           ]))
+
+for i in range(len(transformed_dataset)):
+    sample = transformed_dataset[i]
+
+    print(i, sample['image'].size(), sample['labels'].size())
+
+    if i == 3:
+        break
+'''

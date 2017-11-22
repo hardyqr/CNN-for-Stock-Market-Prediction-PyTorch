@@ -6,29 +6,41 @@ import torch.nn as nn
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
-
+from data_preprocess import *
+from utils import *
 
 # Hyper Parameters
 num_epochs = 5
 batch_size = 100
 learning_rate = 0.001
 
-# MNIST Dataset
-train_dataset = dsets.MNIST(root='./data/',
-                            train=True, 
-                            transform=transforms.ToTensor(),
-                            download=True)
+# stock Dataset
+train_set = stock_img_dataset(csv_file='./data/label_table_train.csv',
+        root_dir='./data/train',
+        transform=transforms.Compose([
+            Rescale(256),
+            ToTensor()
+            ]))
+test_set = stock_img_dataset(csv_file='./data/label_table_test.csv',
+        root_dir='./data/test',
+        transform=transforms.Compose([
+            Rescale(256),
+            ToTensor()
+            ]))
+validation_set = stock_img_dataset(csv_file='./data/label_table_validation.csv',
+        root_dir='./data/validation',
+        transform=transforms.Compose([
+            Rescale(256),
+            ToTensor()
+            ]))
 
-test_dataset = dsets.MNIST(root='./data/',
-                           train=False, 
-                           transform=transforms.ToTensor())
 
 # Data Loader (Input Pipeline)
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                            batch_size=batch_size, 
                                            shuffle=True)
 
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                           batch_size=batch_size, 
                                           shuffle=False)
 
@@ -46,7 +58,7 @@ class CNN(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2))
-        self.fc = nn.Linear(7*7*32, 10)
+        self.fc = nn.Linear(7*7*32, 3)
         
     def forward(self, x):
         out = self.layer1(x)
@@ -55,7 +67,7 @@ class CNN(nn.Module):
         out = self.fc(out)
         return out
         
-cnn = CNN()
+cnn = CNN().double()
 
 
 # Loss and Optimizer
@@ -64,9 +76,12 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=learning_rate)
 
 # Train the Model
 for epoch in range(num_epochs):
-    for i, (images, labels) in enumerate(train_loader):
-        images = Variable(images)
-        labels = Variable(labels)
+    for i, sample in enumerate(train_loader):
+        #if(i == 0): continue
+        #print(images,labels)
+        images = Variable(sample['image']).double()
+        labels = Variable(sample['labels']).double()
+        print(images.size(), labels.size())
         
         # Forward + Backward + Optimize
         optimizer.zero_grad()

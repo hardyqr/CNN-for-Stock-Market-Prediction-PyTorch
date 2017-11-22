@@ -29,7 +29,7 @@ def main():
     stock_symbol = sys.argv[1].split('/')[-1][:-4] # remove .txt
     counter = 0
     #tqdm
-    for _ in tqdm(range(0,int(data_len/13)+1)):
+    for k in tqdm(range(0,int(data_len/13)+1)):
         if(counter + 13 >= data_len): break
         data_cur = data[counter:counter+13]
         data_close = data_cur['Close']
@@ -47,13 +47,16 @@ def main():
         #fig.set_size_inches(8,8);
         #fig.show()
         file_name = stock_symbol+'_'+str(counter)+'.png'
-        fig.savefig('./data/imgs/' + file_name, dpi=40)
+        mode = 'train' # 70% training set
+        if(k%10 == 0): mode = 'validation' # 10% validation set
+        elif(k%10 == 4 or k%10 == 7): mode = 'test' # 20% testing set
+        fig.savefig('./data/'+ mode +'/'+ file_name, dpi=40)
         # save label
         #label_table = pd.read_csv('./data/label_table.csv',header = None, delim_whitespace=False)
         new_data = [[file_name, labels[0],labels[1],labels[2]]]
         df = pd.DataFrame(new_data, columns=['file_name', 'pred_1', 'pred_2', 'pred_3'])
         #label_table.append(df)
-        df.to_csv('./data/label_table.csv', mode='a', header=False)
+        df.to_csv('./data/label_table_'+mode+'.csv', mode='a', header=False)
         #label_table.to_csv('./data/label_table.csv')
 
 
