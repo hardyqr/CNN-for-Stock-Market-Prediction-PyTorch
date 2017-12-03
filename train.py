@@ -13,7 +13,7 @@ from utils import *
 # Hyper Parameters
 num_epochs = 5
 batch_size = 100
-learning_rate = 0.01
+learning_rate = 0.001
 
 # stock Dataset
 train_set = stock_img_dataset(csv_file='./data/label_table_train.csv',
@@ -75,7 +75,7 @@ class CNN(nn.Module):
         return out
         
 cnn = CNN().double()
-
+cnn.cuda()
 
 # Loss and Optimizer
 #criterion = nn.CrossEntropyLoss()
@@ -87,8 +87,8 @@ for epoch in range(num_epochs):
     for i, sample in enumerate(train_loader):
         #if(i == 0): continue
         #print(images,labels)
-        images = Variable(sample['image'])
-        labels = Variable(sample['labels']).float()
+        images = Variable(sample['image']).cuda()
+        labels = Variable(sample['labels']).float().cuda()
         #print(images.size(), labels.size())
         
         # Forward + Backward + Optimize
@@ -110,8 +110,8 @@ cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
 correct = 0
 total = 0
 for sample in test_loader:
-    images = Variable(sample['image'])
-    labels = Variable(sample['labels'])
+    images = Variable(sample['image']).cuda()
+    labels = Variable(sample['labels']).cuda()
     outputs = cnn(images)
     #_, predicted = torch.max(outputs.data, 1)
     labels = labels.view(-1,1).data.numpy()
@@ -120,7 +120,7 @@ for sample in test_loader:
     total += labels.shape[0]
     correct += (predicted == labels).sum()
 
-print('Test Accuracy of the model on the 10000 test images: %d %%' % (100 * correct / total))
+print('Test Accuracy of the model on the %d test images: %d %%' % (total ,100 * correct / total))
 
 # Save the Trained Model
 torch.save(cnn.state_dict(), 'cnn.pkl')
