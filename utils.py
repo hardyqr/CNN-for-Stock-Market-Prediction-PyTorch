@@ -12,3 +12,7 @@ def dataset_printer(object):
         print(i, sample['image'].size(), sample['labels'].size())
         
         if i == 3:break
+
+
+def to_np(x):
+    return x.data.cpu().numpy()
