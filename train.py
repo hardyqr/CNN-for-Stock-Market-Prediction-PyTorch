@@ -14,7 +14,7 @@ from data_preprocess import *
 from utils import *
 from logger import Logger
 # Hyper Parameters
-num_epochs = 10
+num_epochs = 8
 batch_size = 100
 learning_rate = 0.0001
 
@@ -149,7 +149,7 @@ for epoch in range(num_epochs):
         #print(labels)
         loss = criterion(outputs.float(), labels)
         df = pd.DataFrame([i+1+prev_i ,to_np(loss)])
-        df.to_csv('./training_loss_records', mode='a',header=False)
+        df.to_csv('./training_loss_records.csv', mode='a',header=False)
         loss.backward()
         optimizer.step()
 
