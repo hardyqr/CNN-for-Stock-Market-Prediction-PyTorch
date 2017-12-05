@@ -16,7 +16,7 @@ from logger import Logger
 # Hyper Parameters
 num_epochs = 8
 batch_size = 100
-learning_rate = 0.0001
+learning_rate = 0.0005
 
 
 data_dir = sys.argv[1]
@@ -28,19 +28,19 @@ if(sys.argv[2] == '1'):
 train_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_train.csv',
         root_dir=data_dir+'/sample/train',
         transform=transforms.Compose([
-            Rescale(64),
+            Rescale(128),
             ToTensor()
             ]))
 test_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_test.csv',
         root_dir=data_dir+'/sample/test',
         transform=transforms.Compose([
-            Rescale(64),
+            Rescale(128),
             ToTensor()
             ]))
 validation_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_validation.csv',
         root_dir=data_dir+'/sample/validation',
         transform=transforms.Compose([
-            Rescale(64),
+            Rescale(128),
             ToTensor()
             ]))
 
@@ -95,7 +95,7 @@ class CNN(nn.Module):
             nn.MaxPool2d(2))
 
 
-        self.fc = nn.Linear(8*8*128, 3)
+        self.fc = nn.Linear(16*16*128, 3)
         
     def forward(self, x):
         out1 = self.layer1(x)
@@ -125,7 +125,8 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=learning_rate)
 
 logger = Logger('./logs')
 
-counter=0
+counter = 0
+total = 0
 # Train the Model
 for epoch in range(num_epochs):
     prev_i = len(train_loader)*epoch
@@ -152,6 +153,8 @@ for epoch in range(num_epochs):
         df.to_csv('./training_loss_records.csv', mode='a',header=False)
         loss.backward()
         optimizer.step()
+        
+        total += to_np(labels).shape[0]
 
         if (i+1) % 1 == 0:
             print ('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f' 
@@ -173,7 +176,7 @@ for epoch in range(num_epochs):
                 logger.histo_summary(tag+'/grad', to_np(value.grad), i+1+prev_i)
 
 
-print('train data size: ' + str(counter*batch_size))
+print('traine data size: ' + str(total))
 
 # Test the Model
 cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).

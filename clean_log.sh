@@ -1,5 +1,13 @@
 #!/bin/bash
 
-rm -rf ./log
+if [ -d './logs' ]; then
+	rm -r logs
+fi
 
-rm ./training_loss_records.csv
+if [ -e 'training_loss_records.csv' ]; then
+	rm training_loss_records.csv
+fi
+
+git add .
+git commit -m $1+" version"
+git push
