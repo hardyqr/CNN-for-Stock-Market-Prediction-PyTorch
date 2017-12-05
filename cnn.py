@@ -13,12 +13,13 @@ from tqdm import *
 from data_preprocess import *
 from utils import *
 from logger import Logger
+
 # Hyper Parameters
-num_epochs = 8
+num_epochs = 10
 batch_size = 100
-learning_rate = 0.0005
+learning_rate = 2e-3
 
-
+# argv
 data_dir = sys.argv[1]
 debug = False
 if(sys.argv[2] == '1'):
