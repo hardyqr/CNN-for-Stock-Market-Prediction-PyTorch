@@ -18,22 +18,20 @@ batch_size = 100
 learning_rate = 0.001
 
 # stock Datase
-print('loading trainning data...')
-train_set = stock_img_dataset(csv_file='./data/label_table_train.csv',
-        root_dir='./data/train',
+train_set = stock_img_dataset(csv_file='./data/sample/label_table_train.csv',
+        root_dir='./data/sample/train',
         transform=transforms.Compose([
             Rescale(64),
             ToTensor()
             ]))
-print('loading testing data...')
-test_set = stock_img_dataset(csv_file='./data/label_table_test.csv',
-        root_dir='./data/test',
+test_set = stock_img_dataset(csv_file='./data/sample/label_table_test.csv',
+        root_dir='./data/sample/test',
         transform=transforms.Compose([
             Rescale(64),
             ToTensor()
             ]))
-validation_set = stock_img_dataset(csv_file='./data/label_table_validation.csv',
-        root_dir='./data/validation',
+validation_set = stock_img_dataset(csv_file='./data/sample/label_table_validation.csv',
+        root_dir='./data/sample/validation',
         transform=transforms.Compose([
             Rescale(64),
             ToTensor()
@@ -44,12 +42,11 @@ validation_set = stock_img_dataset(csv_file='./data/label_table_validation.csv',
 train_loader = torch.utils.data.DataLoader(dataset=test_set,
                                            batch_size=batch_size, 
                                            shuffle=True)
-
 test_loader = torch.utils.data.DataLoader(dataset=validation_set,
                                           batch_size=batch_size, 
                                           shuffle=False)
 
-# CNN Model (2 conv layer)
+# CNN Model
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
@@ -88,6 +85,7 @@ class CNN(nn.Module):
         #print(res_layer.size())
         #print(out4.size())
         out5 = res_layer+out4
+        #out5 = out4
         out6 = out5.view(out5.size(0), -1)
         #print(out6.size())
         out7 = self.fc(out6)
