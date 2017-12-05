@@ -94,7 +94,8 @@ class CNN(nn.Module):
         return out7
         
 cnn = CNN().double()
-cnn.cuda()
+if(torch.cuda.is_available()):
+    cnn.cuda()
 
 # Loss and Optimizer
 #criterion = nn.CrossEntropyLoss()
@@ -108,8 +109,11 @@ for epoch in range(num_epochs):
     for i, sample in enumerate(train_loader):
         #if(i == 0): continue
         #print(images,labels)
-        images = Variable(sample['image']).cuda()
-        labels = Variable(sample['labels']).float().cuda()
+        images = Variable(sample['image'])
+        labels = Variable(sample['labels']).float()
+        if(torch.cuda.is_available()):
+            images.cuda()
+            labels.cuda()
         #print(images.size(), labels.size())
         
         # Forward + Backward + Optimize
@@ -137,8 +141,11 @@ cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
 correct = 0
 total = 0
 for sample in test_loader:
-    images = Variable(sample['image']).cuda()
-    labels = Variable(sample['labels']).cuda()
+    images = Variable(sample['image'])
+    labels = Variable(sample['labels'])
+    if(torch.cuda.is_available()):
+        images.cuda()
+        labels.cuda()
     outputs = cnn(images)
     #_, predicted = torch.max(outputs.data, 1)
     labels = labels.view(-1,1).data.numpy()
