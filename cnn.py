@@ -16,7 +16,7 @@ from utils import *
 from logger import Logger
 
 # Hyper Parameters
-num_epochs = 10
+num_epochs = 15
 batch_size = 100
 learning_rate = 2e-4
 
