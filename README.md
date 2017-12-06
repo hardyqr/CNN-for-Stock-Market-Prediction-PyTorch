@@ -8,5 +8,5 @@
 	- pytorch
 ## Current results
 
-![prediction]()
-![loss]()
+![prediction](https://github.com/hardyqr/Deep-Learning-for-Stock-Market-Prediction/blob/master/screen_shots_logs/sota/acc.png)
+![loss](https://github.com/hardyqr/Deep-Learning-for-Stock-Market-Prediction/blob/master/screen_shots_logs/sota/loss.png)
