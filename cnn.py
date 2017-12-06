@@ -9,6 +9,7 @@ from torch.autograd import Variable
 import numpy as np
 import pandas as pd
 import sys
+import math
 from tqdm import *
 from data_preprocess import *
 from utils import *
@@ -17,7 +18,7 @@ from logger import Logger
 # Hyper Parameters
 num_epochs = 10
 batch_size = 100
-learning_rate = 2e-3
+learning_rate = 2e-4
 
 # argv
 data_dir = sys.argv[1]
@@ -47,10 +48,10 @@ validation_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_valida
 
 
 # Data Loader (Input Pipeline)
-train_loader = torch.utils.data.DataLoader(dataset=test_set,
+train_loader = torch.utils.data.DataLoader(dataset=train_set,
                                            batch_size=batch_size, 
                                            shuffle=True)
-test_loader = torch.utils.data.DataLoader(dataset=validation_set,
+test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                           batch_size=batch_size, 
                                           shuffle=False)
 
@@ -91,12 +92,21 @@ class CNN(nn.Module):
             nn.Conv2d(32, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU())
+        self.layer9 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.layer10 = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU())
         self.layer5 = nn.Sequential(
             nn.MaxPool2d(2),
             nn.MaxPool2d(2))
 
 
-        self.fc = nn.Linear(16*16*128, 3)
+        self.fc = nn.Linear(8*8*256, 3)
         
     def forward(self, x):
         out1 = self.layer1(x)
@@ -110,7 +120,9 @@ class CNN(nn.Module):
         #print(out.size())
         out5 = res_layer+out
         #out5 = out4
-        out6 = out5.view(out5.size(0), -1)
+        out = self.layer9(out5)
+        out = self.layer10(out)
+        out6 = out.view(out.size(0), -1)
         #print(out6.size())
         out7 = self.fc(out6)
         return out7
@@ -158,8 +170,8 @@ for epoch in range(num_epochs):
         total += to_np(labels).shape[0]
 
         if (i+1) % 1 == 0:
-            print ('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f' 
-                   %(epoch+1, num_epochs, i+1, len(train_set)//batch_size, loss.data[0]))
+            print ('Epoch [%d/%d], Batch [%d/%d] Loss: %.4f' 
+                   %(epoch+1, num_epochs,i+1, math.ceil(len(train_set)/batch_size),loss.data[0]))
             
             #============ TensorBoard logging ============#
             # (1) Log the scalar values
