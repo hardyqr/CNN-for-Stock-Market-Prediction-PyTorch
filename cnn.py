@@ -215,6 +215,10 @@ for sample in tqdm(test_loader):
 
 print('Test Accuracy of the model on the %d test images: %.4f %%' % (total, 100 * correct / total))
 
+
+df = pd.DataFrame([100 * correct/total])
+df.to_csv('./accuracy_records.csv', mode='a',header=False)
+
 # Save the Trained Model
 torch.save(cnn.state_dict(), 'cnn.pkl')
 
