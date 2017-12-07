@@ -54,7 +54,9 @@ train_loader = torch.utils.data.DataLoader(dataset=train_set,
 test_loader = torch.utils.data.DataLoader(dataset=test_set,
                                           batch_size=batch_size, 
                                           shuffle=False)
-
+val_loader = torch.utils.data.DataLoader(dataset=validation_set,
+                                          batch_size=batch_size, 
+                                          shuffle=False)
 
 
 # CNN Model
@@ -138,6 +140,64 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=learning_rate)
 
 logger = Logger('./logs')
 
+
+def test_module(train_size, data_loader, write=False):
+    # Test the Model
+    cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
+    
+    correct_d1 = 0
+    correct_d2 = 0
+    correct_d3 = 0
+    total = 0
+    counter = 0
+    
+    for sample in tqdm(data_loader):
+        if(debug and counter >= 3): break
+        counter+=1
+        
+        images = Variable(sample['image'])
+        labels = Variable(sample['labels'])
+        if(torch.cuda.is_available()):
+            images = images.cuda()
+            labels = labels.cuda()
+        outputs = cnn(images)
+        #_, predicted = torch.max(outputs.data, 1)
+        
+        #labels = to_np(labels.view(-1,1))
+        #predicted = np.sign(to_np(outputs.view(-1,1)))
+        #print(labels.shape, predicted.shape)
+        
+        labels = to_np(labels)
+        outputs = to_np(outputs)
+        labels_d1 = labels[:,0]
+        labels_d2 = labels[:,1]
+        labels_d3 = labels[:,2]
+        predicted_d1 = np.sign(outputs[:,0])
+        predicted_d2 = np.sign(outputs[:,1])
+        predicted_d3 = np.sign(outputs[:,2])
+        
+        correct_d1 += (predicted_d1 == labels_d1).sum()
+        correct_d2 += (predicted_d2 == labels_d2).sum()
+        correct_d3 += (predicted_d3 == labels_d3).sum()
+        
+        total += labels.shape[0]
+        
+        
+    acc1 = correct_d1 / total
+    acc2 = correct_d2 / total
+    acc3 = correct_d3 / total
+    acc_total = (correct_d3+correct_d2+correct_d3) / ( total * 3)
+    print('Test Accuracy of the model on the %d test images, Day 11: %.4f %%' % (total, 100 * acc1))
+    print('Test Accuracy of the model on the %d test images, Day 12: %.4f %%' % (total, 100 * acc2))
+    print('Test Accuracy of the model on the %d test images, Day 13: %.4f %%' % (total, 100 * acc3))
+    print('Test Accuracy of the model on the %d test images, total: %.4f %%' % (total, 100 * acc_total))
+
+    test_size = total
+    if(write):
+        df = pd.DataFrame([[train_size,test_size,acc1,acc2,acc3,acc_total]])
+        df.to_csv('./accuracy_records.csv', mode='a',header=False)
+
+
 counter = 0
 total = 0
 # Train the Model
@@ -162,7 +222,7 @@ for epoch in range(num_epochs):
         #print(outputs)
         #print(labels)
         loss = criterion(outputs.float(), labels)
-        df = pd.DataFrame([i+1+prev_i ,to_np(loss)])
+        df = pd.DataFrame([[i+1+prev_i ,to_np(loss)[0]]])
         df.to_csv('./training_loss_records.csv', mode='a',header=False)
         loss.backward()
         optimizer.step()
@@ -187,67 +247,19 @@ for epoch in range(num_epochs):
                 tag = tag.replace('.', '/')
                 logger.histo_summary(tag, to_np(value), i+1+prev_i)
                 logger.histo_summary(tag+'/grad', to_np(value.grad), i+1+prev_i)
-
-
-print('traine data size: ' + str(total))
-train_size = total
-
-# Test the Model
-cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
-correct_d1 = 0
-correct_d2 = 0
-correct_d3 = 0
-total = 0
-counter = 0
-
-for sample in tqdm(test_loader):
-    if(debug and counter >= 3): break
-    counter+=1
-
-    images = Variable(sample['image'])
-    labels = Variable(sample['labels'])
-    if(torch.cuda.is_available()):
-        images = images.cuda()
-        labels = labels.cuda()
-    outputs = cnn(images)
-    #_, predicted = torch.max(outputs.data, 1)
-
-
-    #labels = to_np(labels.view(-1,1))
-    #predicted = np.sign(to_np(outputs.view(-1,1)))
-    #print(labels.shape, predicted.shape)
-
-    labels = to_np(labels)
-    outputs = to_np(outputs)
-    labels_d1 = labels[:,0]
-    labels_d2 = labels[:,1]
-    labels_d3 = labels[:,2]
-    predicted_d1 = np.sign(outputs[:,0])
-    predicted_d2 = np.sign(outputs[:,1])
-    predicted_d3 = np.sign(outputs[:,2])
     
-    correct_d1 += (predicted_d1 == labels_d1).sum()
-    correct_d2 += (predicted_d2 == labels_d2).sum()
-    correct_d3 += (predicted_d3 == labels_d3).sum()
+    # test at the end of every epoch
+    if(epoch + 1 == num_epochs ): 
+        # last epoch ends
+        test_module(total, test_loader, True)
+        print('Traine data size: ' + str(total))
+    else:
+        # during training
+        test_module(total,val_loader,False)
     
-    total += labels.shape[0]
+    # Save the Trained Model
+    torch.save(cnn.state_dict(), 'cnn.pkl')
 
 
-acc1 = correct_d1 / total
-acc2 = correct_d2 / total
-acc3 = correct_d3 / total
-acc_total = (correct_d3+correct_d2+correct_d3) / ( total * 3)
-print('Test Accuracy of the model on the %d test images, Day 11: %.4f %%' % (total, 100 * acc1))
-print('Test Accuracy of the model on the %d test images, Day 12: %.4f %%' % (total, 100 * acc2))
-print('Test Accuracy of the model on the %d test images, Day 13: %.4f %%' % (total, 100 * acc3))
 
-print('Test Accuracy of the model on the %d test images, total: %.4f %%' % (total, 100 * acc_total))
-
-df = pd.DataFrame([train_size,total,acc1,acc2,acc3,acc_total])
-
-
-df.to_csv('./accuracy_records.csv', mode='a',header=False)
-
-# Save the Trained Model
-torch.save(cnn.state_dict(), 'cnn.pkl')
 
