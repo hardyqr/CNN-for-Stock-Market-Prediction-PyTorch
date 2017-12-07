@@ -202,6 +202,7 @@ counter = 0
 total = 0
 # Train the Model
 for epoch in range(num_epochs):
+    if(debug and counter>=3):break
     prev_i = len(train_loader)*epoch
     for i, sample in enumerate(train_loader):
         if(debug and counter>=3):break
