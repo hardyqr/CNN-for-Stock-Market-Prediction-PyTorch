@@ -30,19 +30,19 @@ if(sys.argv[2] == '1'):
 train_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_train.csv',
         root_dir=data_dir+'/sample/train',
         transform=transforms.Compose([
-            Rescale(128),
+            Rescale(64),
             ToTensor()
             ]))
 test_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_test.csv',
         root_dir=data_dir+'/sample/test',
         transform=transforms.Compose([
-            Rescale(128),
+            Rescale(64),
             ToTensor()
             ]))
 validation_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_validation.csv',
         root_dir=data_dir+'/sample/validation',
         transform=transforms.Compose([
-            Rescale(128),
+            Rescale(64),
             ToTensor()
             ]))
 
@@ -106,7 +106,7 @@ class CNN(nn.Module):
             nn.MaxPool2d(2))
 
 
-        self.fc = nn.Linear(8*8*256, 3)
+        self.fc = nn.Linear(4*4*256, 3)
         
     def forward(self, x):
         out1 = self.layer1(x)
@@ -190,12 +190,16 @@ for epoch in range(num_epochs):
 
 
 print('traine data size: ' + str(total))
+train_size = total
 
 # Test the Model
 cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
-correct = 0
+correct_d1 = 0
+correct_d2 = 0
+correct_d3 = 0
 total = 0
 counter = 0
+
 for sample in tqdm(test_loader):
     if(debug and counter >= 3): break
     counter+=1
@@ -207,16 +211,41 @@ for sample in tqdm(test_loader):
         labels = labels.cuda()
     outputs = cnn(images)
     #_, predicted = torch.max(outputs.data, 1)
-    labels = to_np(labels.view(-1,1))
-    predicted = np.sign(to_np(outputs.view(-1,1)))
+
+
+    #labels = to_np(labels.view(-1,1))
+    #predicted = np.sign(to_np(outputs.view(-1,1)))
     #print(labels.shape, predicted.shape)
+
+    labels = to_np(labels)
+    outputs = to_np(outputs)
+    labels_d1 = labels[:,0]
+    labels_d2 = labels[:,1]
+    labels_d3 = labels[:,2]
+    predicted_d1 = np.sign(outputs[:,0])
+    predicted_d2 = np.sign(outputs[:,1])
+    predicted_d3 = np.sign(outputs[:,2])
+    
+    correct_d1 += (predicted_d1 == labels_d1).sum()
+    correct_d2 += (predicted_d2 == labels_d2).sum()
+    correct_d3 += (predicted_d3 == labels_d3).sum()
+    
     total += labels.shape[0]
-    correct += (predicted == labels).sum()
-
-print('Test Accuracy of the model on the %d test images: %.4f %%' % (total, 100 * correct / total))
 
 
-df = pd.DataFrame([100 * correct/total])
+acc1 = correct_d1 / total
+acc2 = correct_d2 / total
+acc3 = correct_d3 / total
+acc_total = (correct_d3+correct_d2+correct_d3) / ( total * 3)
+print('Test Accuracy of the model on the %d test images, Day 11: %.4f %%' % (total, 100 * acc1))
+print('Test Accuracy of the model on the %d test images, Day 12: %.4f %%' % (total, 100 * acc2))
+print('Test Accuracy of the model on the %d test images, Day 13: %.4f %%' % (total, 100 * acc3))
+
+print('Test Accuracy of the model on the %d test images, total: %.4f %%' % (total, 100 * acc_total))
+
+df = pd.DataFrame([train_size,total,acc1,acc2,acc3,acc_total])
+
+
 df.to_csv('./accuracy_records.csv', mode='a',header=False)
 
 # Save the Trained Model
