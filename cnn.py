@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import sys
 import math
+import time
 from tqdm import *
 from data_preprocess import *
 from utils import *
@@ -23,8 +24,16 @@ learning_rate = 2e-4
 # argv
 data_dir = sys.argv[1]
 debug = False
+load_prev_model = False
+direct_test = False
 if(sys.argv[2] == '1'):
     debug = True
+if(sys.argv[3] == '1'):
+    load_prev_model = True
+if(sys.argv[4] == '1'):
+    direct_test = True
+
+''' Data ''' 
 
 # stock Datase
 train_set = stock_img_dataset(csv_file=data_dir+'/sample/label_table_train.csv',
@@ -59,10 +68,13 @@ val_loader = torch.utils.data.DataLoader(dataset=validation_set,
                                           shuffle=False)
 
 
-# CNN Model
-class CNN(nn.Module):
+''' Models '''
+
+
+# Residual CNN
+class res_cnn(nn.Module):
     def __init__(self):
-        super(CNN, self).__init__()
+        super(res_cnn, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Conv2d(4, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
@@ -106,8 +118,6 @@ class CNN(nn.Module):
         self.layer5 = nn.Sequential(
             nn.MaxPool2d(2),
             nn.MaxPool2d(2))
-
-
         self.fc = nn.Linear(4*4*256, 3)
         
     def forward(self, x):
@@ -124,14 +134,42 @@ class CNN(nn.Module):
         #out5 = out4
         out = self.layer9(out5)
         out = self.layer10(out)
+        out = self.layer10(out)
         out6 = out.view(out.size(0), -1)
         #print(out6.size())
         out7 = self.fc(out6)
         return out7
+
+
+'''
+# GoogLeNet
+class google_net(nn.Module):
+    def __init__(self):
+        super(google_net, self).__init__()
         
-cnn = CNN().double()
+        self.conv2d_1x1_a = nn.Conv2d(4,64,kernel_size=1),
+        self.conv2d_3x3_a = nn.Conv2d(4,64,kernel_size=3,padding=1),
+        self.conv2d_5x5_a = nn.Conv2d(4,64,kernel_size=5,padding=2),
+        
+        self.conv2d_1x1_b = nn.Conv2d(64,128,kernel_size=1)
+        self.conv2d_3x3_b = nn.Conv2d(64,128,kernel_size=3,padding=1)
+        self.conv2d_5x5_b = nn.Conv2d(64,128,kernel_size=5,padding=2)
+        self.max_pool = nn.MaxPool2d(kernel_size=3,stride=1,padding=1)
+    def forward(self, x):
+        # inception 1
+
+
+        # inception 2
+    return out7
+'''
+
+cnn = res_cnn().double()
 if(torch.cuda.is_available()):
     cnn.cuda()
+
+if(load_prev_model):
+    print('load previous model...')
+    cnn.load_state_dict(torch.load('cnn.pkl'))
 
 # Loss and Optimizer
 #criterion = nn.CrossEntropyLoss()
@@ -202,6 +240,10 @@ counter = 0
 total = 0
 # Train the Model
 for epoch in range(num_epochs):
+    if(direct_test):
+        test_module(-1, test_loader, False)
+        break
+
     if(debug and counter>=3):break
     prev_i = len(train_loader)*epoch
     for i, sample in enumerate(train_loader):
@@ -259,7 +301,11 @@ for epoch in range(num_epochs):
         test_module(total,val_loader,False)
     
     # Save the Trained Model
-    torch.save(cnn.state_dict(), 'cnn.pkl')
+    if(not debug):
+        torch.save(cnn.state_dict(), 'cnn.pkl')
+    
+    # rest 20min for every 5 epochs
+    if(epoch % 5 == 0): time.sleep(1200)
 
 
 
