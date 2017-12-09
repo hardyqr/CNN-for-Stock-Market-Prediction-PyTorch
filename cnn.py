@@ -12,14 +12,15 @@ import sys
 import math
 import time
 from tqdm import *
+
 from data_preprocess import *
 from utils import *
 from logger import Logger
 
 # Hyper Parameters
-num_epochs = 15
+num_epochs = 10
 batch_size = 100
-learning_rate = 2e-4
+learning_rate = 2e-3
 
 # argv
 data_dir = sys.argv[1]
@@ -127,10 +128,10 @@ class res_cnn(nn.Module):
         out4 = self.layer4(out3)
         out = self.layer6(out4)
         out = self.layer7(out)
-        res_layer = self.layer5(self.layer8(out1))
+        res_layer_1 = self.layer5(self.layer8(out1))
         #print(res_layer.size())
         #print(out.size())
-        out5 = res_layer+out
+        out5 = res_layer_1+out
         #out5 = out4
         out = self.layer9(out5)
         out = self.layer10(out)
@@ -168,7 +169,7 @@ if(torch.cuda.is_available()):
     cnn.cuda()
 
 if(load_prev_model):
-    print('load previous model...')
+    print('Loading previous model...')
     cnn.load_state_dict(torch.load('cnn.pkl'))
 
 # Loss and Optimizer
@@ -179,7 +180,7 @@ optimizer = torch.optim.Adam(cnn.parameters(), lr=learning_rate)
 logger = Logger('./logs')
 
 
-def test_module(train_size, data_loader, write=False):
+def test_module(train_size, epoch, data_loader, write=False):
     # Test the Model
     cnn.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
     
@@ -210,10 +211,18 @@ def test_module(train_size, data_loader, write=False):
         labels_d1 = labels[:,0]
         labels_d2 = labels[:,1]
         labels_d3 = labels[:,2]
+
+        # if output>=0: predict=1, else: predict=-1
         predicted_d1 = np.sign(outputs[:,0])
         predicted_d2 = np.sign(outputs[:,1])
         predicted_d3 = np.sign(outputs[:,2])
-        
+
+        # only conduct a prediction when abs(output) > 0.5
+        #predicted_high_d1 = np.sign(outputs[:,0])
+        #predicted_high_d2 = np.sign(outputs[:,1])
+        #predicted_high_d3 = np.sign(outputs[:,2])
+
+
         correct_d1 += (predicted_d1 == labels_d1).sum()
         correct_d2 += (predicted_d2 == labels_d2).sum()
         correct_d3 += (predicted_d3 == labels_d3).sum()
@@ -234,6 +243,19 @@ def test_module(train_size, data_loader, write=False):
     if(write):
         df = pd.DataFrame([[train_size,test_size,acc1,acc2,acc3,acc_total]])
         df.to_csv('./accuracy_records.csv', mode='a',header=False)
+    
+
+    # log validation acc
+    if(epoch != -1):
+        info = {
+                'acc_d1': acc1*100,
+                'acc_d2': acc2*100,
+                'acc_d3': acc3*100,
+                'acc_avg': acc_total*100
+                }
+        
+        for tag, value in info.items():
+            logger.scalar_summary(tag, value, epoch)
 
 
 counter = 0
@@ -241,7 +263,7 @@ total = 0
 # Train the Model
 for epoch in range(num_epochs):
     if(direct_test):
-        test_module(-1, test_loader, False)
+        test_module(-1, -1,test_loader, False)
         break
 
     if(debug and counter>=3):break
@@ -294,18 +316,22 @@ for epoch in range(num_epochs):
     # test at the end of every epoch
     if(epoch + 1 == num_epochs ): 
         # last epoch ends
-        test_module(total, test_loader, True)
+        test_module(total, -1, test_loader, True)
         print('Traine data size: ' + str(total))
     else:
         # during training
-        test_module(total,val_loader,False)
+        test_module(total, epoch,val_loader,False)
     
     # Save the Trained Model
     if(not debug):
         torch.save(cnn.state_dict(), 'cnn.pkl')
     
-    # rest 20min for every 5 epochs
-    if(epoch % 5 == 0): time.sleep(1200)
+    # rest 20min for every n epochs
+    rest_time = 1200 #20min
+    n = 10
+    if((epoch+1) % n == 0): 
+        print('Having a rest...')
+        time.sleep(rest_time)
 
 
 
