@@ -329,7 +329,7 @@ for epoch in range(num_epochs):
     # rest 20min for every n epochs
     rest_time = 1200 #20min
     n = 10
-    if((epoch+1) % n == 0): 
+    if((epoch+1) % (n == 0 and (epoch+1) != num_epochs): 
         print('Having a rest...')
         time.sleep(rest_time)
 
