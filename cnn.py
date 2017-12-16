@@ -320,8 +320,8 @@ for epoch in range(num_epochs):
         optimizer.step()
         
         # costly? change this step?
-        #total += to_np(labels).shape[0]
-        total += labels.shape[0] # test
+        total += to_np(labels).shape[0]
+        #total += labels.shape[0] # test
 
         if (i+1) % 1 == 0:
             print ('Epoch [%d/%d], Batch [%d/%d] Loss: %.4f' 
