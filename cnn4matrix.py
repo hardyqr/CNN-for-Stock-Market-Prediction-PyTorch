@@ -18,9 +18,10 @@ from utils import *
 from logger import Logger
 
 # Hyper Parameters
-num_epochs = 12
+num_epochs = 20
 batch_size = 256
-learning_rate = 2e-4
+learning_rate = 1e-3
+#learning_rate = 2e-4
 
 # argv
 #data_dir = sys.argv[1]
@@ -58,24 +59,12 @@ class DigitDataset(Dataset):
         self.N = int(pixels.shape[0]/5) # N: num of train samples
         if(self.N != labels.shape[0]):
             print('matrix & label dimension mismatch')
-        print(pixels.shape)
-        print(pixels[0])
-        print(pixels[1])
-        print(pixels[2])
-
-        pixels = np.expand_dims(pixels,axis=3)
-        print(pixels.shape)
-        pixels = np.transpose(pixels,(0,3,1,2))
-        #.reshape([self.N,5,20]),(0,2,1))
-        print('pixels.shape:')
-        print(pixels.shape)
+        pixels = pixels.reshape(self.N,5,1,20)
+        pixels = pixels.transpose(0,2,3,1)
 
         #self.pixels_train = np.array(pixels).reshape([self.N,1,20,5])
         self.pixels_train = pixels
-        print(self.pixels_train[0][0][0])
-        print(self.pixels_train[0][0][1])
-        print(self.pixels_train[0][0][2])
-        self.labels_train = np.array(labels).reshape([self.N,3])
+        self.labels_train = np.array(labels).reshape(self.N,3)
         
     def __getitem__(self,index):
         label = torch.from_numpy(self.labels_train[index]).type(self.dtype)
@@ -100,12 +89,11 @@ dtype = torch.FloatTensor
 training_dataset = DigitDataset(train_path, train_label_path,dtype)
 train_loader = DataLoader(training_dataset, batch_size = batch_size, shuffle=True)
 
-val_dataset = DigitDataset(val_path, val_label_path,dtype)
-val_loader = DataLoader(val_dataset)
-
 test_dataset = DigitDataset(test_path, test_label_path, dtype)
 test_loader = DataLoader(test_dataset)
 
+val_dataset = DigitDataset(val_path, val_label_path,dtype)
+val_loader = DataLoader(val_dataset)
 
 print(len(train_loader))
 print(len(test_loader))
@@ -114,76 +102,47 @@ print(len(val_loader))
 
 ''' Models '''
 
+def helper(x):
+    if(x>=0.5):
+        return 1.
+    else: 
+        return 0.
+
 
 # Residual CNN
 class res_cnn(nn.Module):
     def __init__(self):
         super(res_cnn, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(4, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.3))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU())
+            nn.Conv2d(16, 8, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.3))
         self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
+            nn.Conv2d(8, 32, kernel_size=1),
+            nn.LeakyReLU(0.3))
         self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU())
-        self.layer6 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU())
-        self.layer7 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.MaxPool2d(2))
-        self.layer8 = nn.Sequential(
-            nn.Conv2d(64, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU())
-        self.layer9 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.layer10 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU())
-        self.layer5 = nn.Sequential(
-            nn.MaxPool2d(2),
-            nn.MaxPool2d(2))
+            nn.Conv2d(32, 5,kernel_size=1),
+            nn.LeakyReLU(0.3))
         #self.fc = nn.Linear(4*4*256, 3)
-        self.fc = nn.Linear(4*4*256, 1)
-        
+        self.fc = nn.Linear(5*2*10, 2)
+        self.pl = nn.AvgPool2d(kernel_size=2)
+        self.sm = nn.Softmax()
+
     def forward(self, x):
-        out1 = self.layer1(x)
-        out2 = self.layer2(out1)
-        out3 = self.layer3(out2)
-        out4 = self.layer4(out3)
-        out = self.layer6(out4)
-        out = self.layer7(out)
-        #re_layer_0 = self.layer
-        res_layer_1 = self.layer5(self.layer8(out1))
-        #print(res_layer.size())
+        #print(x.size())
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
         #print(out.size())
-        out5 = res_layer_1+out
-        #out5 = out4
-        out = self.layer9(out5)
-        out = self.layer10(out)
-        #out = self.layer10(out)
-        out6 = out.view(out.size(0), -1)
-        #print(out6.size())
-        out7 = self.fc(out6)
-        return out7
+        out = self.pl(out)
+        #print(out.size())
+        out = out.view(out.size(0),-1)
+        out = self.fc(out)
+        out = self.sm(out)
+        return out
 
 
 '''
@@ -218,11 +177,11 @@ if(use_gpu):
 
 if(load_prev_model):
     print('Loading previous model...')
-    cnn.load_state_dict(torch.load('cnn.pkl'))
+    cnn.load_state_dict(torch.load('cnn4matrix.pkl'))
 
 # Loss and Optimizer
-#criterion = nn.CrossEntropyLoss()
-criterion = nn.MSELoss()
+criterion = nn.CrossEntropyLoss()
+#criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(cnn.parameters(), lr=learning_rate)
 
 logger = Logger('./logs')
@@ -242,8 +201,10 @@ def test_module(train_size, epoch, data_loader, write=False):
         if(debug and counter >= 3): break
         counter+=1
         
-        images = Variable(sample['image'])
-        labels = Variable(sample['labels'])
+
+        images = Variable(sample[0]).double()
+        labels = Variable(sample[1]).float()
+
         if(use_gpu):
             images = images.cuda()
             labels = labels.cuda()
@@ -257,13 +218,16 @@ def test_module(train_size, epoch, data_loader, write=False):
         #=======cpu computation=======#
         # can we migrate it to the GPU?
         labels = to_np(labels)
-        outputs = to_np(outputs)
+        scores = to_np(outputs)
         labels_d1 = labels[:,0]
+        #labels_d1_onehot[np.arrage(labels_d1.shape[0]), labels_d1] = 1
         #labels_d2 = labels[:,1]
         #labels_d3 = labels[:,2]
 
+
         # if output>=0: predict=1, else: predict=-1
-        predicted_d1 = np.sign(outputs[:,0])
+        #predicted_d1 = list(map(helper,outputs[:,0]))
+        predicted_d1 = scores.argmax()
         #predicted_d2 = np.sign(outputs[:,1])
         #predicted_d3 = np.sign(outputs[:,2])
 
@@ -271,8 +235,7 @@ def test_module(train_size, epoch, data_loader, write=False):
         #predicted_high_d1 = np.sign(outputs[:,0])
         #predicted_high_d2 = np.sign(outputs[:,1])
         #predicted_high_d3 = np.sign(outputs[:,2])
-
-
+        
         correct_d1 += (predicted_d1 == labels_d1).sum()
         #correct_d2 += (predicted_d2 == labels_d2).sum()
         #correct_d3 += (predicted_d3 == labels_d3).sum()
@@ -287,9 +250,9 @@ def test_module(train_size, epoch, data_loader, write=False):
     acc2 = 0
     acc3 = 0
     acc_total = acc1
-    print('Test Accuracy of the model on the %d test images, Day 11: %.4f %%' % (total, 100 * acc1))
-    #print('Test Accuracy of the model on the %d test images, Day 12: %.4f %%' % (total, 100 * acc2))
-    #print('Test Accuracy of the model on the %d test images, Day 13: %.4f %%' % (total, 100 * acc3))
+    print('Test Accuracy of the model on the %d test images, Day 21: %.4f %%' % (total, 100 * acc1))
+    #print('Test Accuracy of the model on the %d test images, Day 22: %.4f %%' % (total, 100 * acc2))
+    #print('Test Accuracy of the model on the %d test images, Day 23: %.4f %%' % (total, 100 * acc3))
     #print('Test Accuracy of the model on the %d test images, total: %.4f %%' % (total, 100 * acc_total))
 
     test_size = total
@@ -333,8 +296,8 @@ for epoch in range(num_epochs):
         counter+=1
         #if(i == 0): continue
         #print(images,labels)
-        images = Variable(sample['image'])
-        labels = Variable(sample['labels']).float()
+        images = Variable(sample[0]).double()
+        labels = Variable(sample[1]).float()
         if(use_gpu):
             images = images.cuda()
             labels = labels.cuda()
@@ -342,16 +305,17 @@ for epoch in range(num_epochs):
         
         # Forward + Backward + Optimize
         optimizer.zero_grad()
-        outputs = cnn(images).float()
+        score = cnn(images).float()
         #print(outputs.size(), labels.size())
         #print(outputs)
         #print(labels)
         labels = labels[:,0]
-        outputs = outputs[:,0]
-        loss = criterion(outputs.float(), labels)
+        #outputs = outputs[:,0]
+        
+        loss = criterion(score, labels.long())
         # costly? change this step?
         df = pd.DataFrame([[i+1+prev_i ,to_np(loss)[0]]])
-        df.to_csv('./training_loss_records.csv', mode='a',header=False)
+        df.to_csv('./training_loss_records_4matrix.csv', mode='a',header=False)
         loss.backward()
         optimizer.step()
         
@@ -359,9 +323,9 @@ for epoch in range(num_epochs):
         total += to_np(labels).shape[0]
         #total += labels.shape[0] # test
 
-        if (i+1) % 1 == 0:
+        if (i+1) % 100 == 0:
             print ('Epoch [%d/%d], Batch [%d/%d] Loss: %.4f' 
-                   %(epoch+1, num_epochs,i+1, math.ceil(len(train_set)/batch_size),loss.data[0]))
+                   %(epoch+1, num_epochs,i+1, math.ceil(len(training_dataset)/batch_size),loss.data[0]))
             
             #============ TensorBoard logging ============#
             # (1) Log the scalar values
@@ -390,7 +354,7 @@ for epoch in range(num_epochs):
     
     # Save the Trained Model
     if(not debug):
-        torch.save(cnn.state_dict(), 'cnn.pkl')
+        torch.save(cnn.state_dict(), 'cnn4matrix.pkl')
     
     # rest 20min for every n epochs
     #rest_time = 1200 #20min
