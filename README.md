@@ -10,13 +10,13 @@
 ### Approach 1:
 Apply convolution on data matrices directly.
 
-Input: (5*n) matrices -> (Open,High,Low,Close,Volume)*(d1,d2,...,dn)
+Input: (5\*n) matrices -> (Open,High,Low,Close,Volume)\*(d1,d2,...,dn)
 
 Output: classification result
 
 ### Approach 2:
 Generate candlestick graphs first.
-![sample](https://github.com/hardyqr/Deep-Learning-for-Stock-Market-Prediction/blob/master/screen_shots_logs/sota/acc+loss.png)
+![sample](https://github.com/hardyqr/CNN-for-Stock-Market-Prediction/blob/master/screen_shots_logs/sample.png)
 
 Input: candlestick graphs
 
