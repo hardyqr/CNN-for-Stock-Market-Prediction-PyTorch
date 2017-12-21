@@ -109,28 +109,26 @@ def helper(x):
         return 0.
 
 
-# Residual CNN
+# CNN
+
+# reproduction of CLEAR-Trade:
+# https://arxiv.org/pdf/1709.01574.pdf
 class res_cnn(nn.Module):
     def __init__(self):
         super(res_cnn, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=3, padding=1),
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
             nn.LeakyReLU(0.3))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(16, 8, kernel_size=3, padding=1),
             nn.LeakyReLU(0.3))
         self.layer3 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=1),
-            nn.LeakyReLU(0.3))
-        self.layer35 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=1),
+            nn.Conv2d(8, 32, kernel_size=1),
             nn.LeakyReLU(0.3))
         self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 64,kernel_size=1),
+            nn.Conv2d(32, 2,kernel_size=1),
             nn.LeakyReLU(0.3))
-        #self.fc = nn.Linear(4*4*256, 3)
-        self.fc = nn.Linear(64*20*5, 2)
-        self.pl = nn.AvgPool2d(kernel_size=2)
+        self.pl = nn.AvgPool2d((20,5))
         self.sm = nn.Softmax()
 
     def forward(self, x):
@@ -138,39 +136,15 @@ class res_cnn(nn.Module):
         out = self.layer1(x)
         out = self.layer2(out)
         out = self.layer3(out)
-        out = self.layer35(out)
+        #out = self.layer35(out)
         out = self.layer4(out)
         #print(out.size())
-        #out = self.pl(out)
+        out = self.pl(out)
         #print(out.size())
         out = out.view(out.size(0),-1)
-        out = self.fc(out)
+        #print(out.size())
         out = self.sm(out)
         return out
-
-
-'''
-# GoogLeNet
-class google_net(nn.Module):
-    def __init__(self):
-        super(google_net, self).__init__()
-        
-        self.conv2d_1x1_a = nn.Conv2d(4,64,kernel_size=1),
-        self.conv2d_3x3_a = nn.Conv2d(4,64,kernel_size=3,padding=1),
-        self.conv2d_5x5_a = nn.Conv2d(4,64,kernel_size=5,padding=2),
-        
-        self.conv2d_1x1_b = nn.Conv2d(64,128,kernel_size=1)
-        self.conv2d_3x3_b = nn.Conv2d(64,128,kernel_size=3,padding=1)
-        self.conv2d_5x5_b = nn.Conv2d(64,128,kernel_size=5,padding=2)
-        self.max_pool = nn.MaxPool2d(kernel_size=3,stride=1,padding=1)
-    def forward(self, x):
-        # inception 1
-
-
-        # inception 2
-    return out7
-'''
-
 
 
 ''' train and test ''' 
@@ -310,16 +284,12 @@ for epoch in range(num_epochs):
         # Forward + Backward + Optimize
         optimizer.zero_grad()
         score = cnn(images).float()
-        #print(outputs.size(), labels.size())
-        #print(outputs)
-        #print(labels)
         labels = labels[:,0]
         #outputs = outputs[:,0]
         
         loss = criterion(score, labels.long())
-        # costly? change this step?
-        df = pd.DataFrame([[i+1+prev_i ,to_np(loss)[0]]])
-        df.to_csv('./training_loss_records_4matrix.csv', mode='a',header=False)
+        #df = pd.DataFrame([[i+1+prev_i ,to_np(loss)[0]]])
+        #df.to_csv('./training_loss_records_4matrix.csv', mode='a',header=False)
         loss.backward()
         optimizer.step()
         
@@ -328,7 +298,6 @@ for epoch in range(num_epochs):
         #total += labels.shape[0] # test
 
 
-            
         #============ TensorBoard logging ============#
         # (1) Log the scalar values
         info = {
@@ -338,12 +307,13 @@ for epoch in range(num_epochs):
         for tag, value in info.items():
             logger.scalar_summary(tag, value, i+1+prev_i)
 
+        '''
         # (2) Log values and gradients of the parameters (histogram)
         for tag, value in cnn.named_parameters():
             tag = tag.replace('.', '/')
             logger.histo_summary(tag, to_np(value), i+1+prev_i)
             logger.histo_summary(tag+'/grad', to_np(value.grad), i+1+prev_i)
-        
+        '''
         if (i+1) % 100 == 0:
             print ('Epoch [%d/%d], Batch [%d/%d] Loss: %.4f' 
                    %(epoch+1, num_epochs,i+1, math.ceil(len(training_dataset)/batch_size),loss.data[0]))
@@ -361,11 +331,3 @@ for epoch in range(num_epochs):
     # Save the Trained Model
     if(not debug):
         torch.save(cnn.state_dict(), 'cnn4matrix.pkl')
-    
-    # rest 20min for every n epochs
-    #rest_time = 1200 #20min
-    #n = 10
-    #if((epoch+1) % n == 0 and (epoch+1) != num_epochs):
-    #    print('Having a rest...')
-    #    time.sleep(rest_time)
-
