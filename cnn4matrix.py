@@ -18,10 +18,10 @@ from utils import *
 from logger import Logger
 
 # Hyper Parameters
-num_epochs = 20
+num_epochs = 10
 batch_size = 256
-learning_rate = 1e-3
-#learning_rate = 2e-4
+#learning_rate = 1e-3
+learning_rate = 1e-4
 
 # argv
 #data_dir = sys.argv[1]
@@ -95,9 +95,9 @@ test_loader = DataLoader(test_dataset)
 val_dataset = DigitDataset(val_path, val_label_path,dtype)
 val_loader = DataLoader(val_dataset)
 
-print(len(train_loader))
-print(len(test_loader))
-print(len(val_loader))
+print(len(training_dataset))
+print(len(test_dataset))
+print(len(val_dataset))
 
 
 ''' Models '''
@@ -114,19 +114,22 @@ class res_cnn(nn.Module):
     def __init__(self):
         super(res_cnn, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.Conv2d(1, 64, kernel_size=3, padding=1),
             nn.LeakyReLU(0.3))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 8, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.LeakyReLU(0.3))
         self.layer3 = nn.Sequential(
-            nn.Conv2d(8, 32, kernel_size=1),
+            nn.Conv2d(128, 128, kernel_size=1),
+            nn.LeakyReLU(0.3))
+        self.layer35 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=1),
             nn.LeakyReLU(0.3))
         self.layer4 = nn.Sequential(
-            nn.Conv2d(32, 5,kernel_size=1),
+            nn.Conv2d(128, 64,kernel_size=1),
             nn.LeakyReLU(0.3))
         #self.fc = nn.Linear(4*4*256, 3)
-        self.fc = nn.Linear(5*2*10, 2)
+        self.fc = nn.Linear(64*20*5, 2)
         self.pl = nn.AvgPool2d(kernel_size=2)
         self.sm = nn.Softmax()
 
@@ -135,9 +138,10 @@ class res_cnn(nn.Module):
         out = self.layer1(x)
         out = self.layer2(out)
         out = self.layer3(out)
+        out = self.layer35(out)
         out = self.layer4(out)
         #print(out.size())
-        out = self.pl(out)
+        #out = self.pl(out)
         #print(out.size())
         out = out.view(out.size(0),-1)
         out = self.fc(out)
@@ -323,25 +327,27 @@ for epoch in range(num_epochs):
         total += to_np(labels).shape[0]
         #total += labels.shape[0] # test
 
+
+            
+        #============ TensorBoard logging ============#
+        # (1) Log the scalar values
+        info = {
+            'loss': loss.data[0]
+        }
+
+        for tag, value in info.items():
+            logger.scalar_summary(tag, value, i+1+prev_i)
+
+        # (2) Log values and gradients of the parameters (histogram)
+        for tag, value in cnn.named_parameters():
+            tag = tag.replace('.', '/')
+            logger.histo_summary(tag, to_np(value), i+1+prev_i)
+            logger.histo_summary(tag+'/grad', to_np(value.grad), i+1+prev_i)
+        
         if (i+1) % 100 == 0:
             print ('Epoch [%d/%d], Batch [%d/%d] Loss: %.4f' 
                    %(epoch+1, num_epochs,i+1, math.ceil(len(training_dataset)/batch_size),loss.data[0]))
-            
-            #============ TensorBoard logging ============#
-            # (1) Log the scalar values
-            info = {
-            'loss': loss.data[0]
-            }
 
-            for tag, value in info.items():
-                logger.scalar_summary(tag, value, i+1+prev_i)
-
-            # (2) Log values and gradients of the parameters (histogram)
-            for tag, value in cnn.named_parameters():
-                tag = tag.replace('.', '/')
-                logger.histo_summary(tag, to_np(value), i+1+prev_i)
-                logger.histo_summary(tag+'/grad', to_np(value.grad), i+1+prev_i)
-    
     # test at the end of every epoch
     if(epoch + 1 == num_epochs ): 
         # last epoch ends
