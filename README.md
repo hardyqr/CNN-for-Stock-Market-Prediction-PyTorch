@@ -7,15 +7,19 @@
 - Pytorch implementation
 
 ## Two Approaches
-### Approach 1:
-Apply convolution on data matrices directly.
+### Approach 1
+- `cnn4matrix.py`
+
+- Apply convolution on data matrices directly.
 
 Input: (5\*n) matrices -> (Open,High,Low,Close,Volume)\*(d1,d2,...,dn)
 
 Output: classification result
 
-### Approach 2:
-Generate candlestick graphs first.
+### Approach 2
+- `cnn.py`
+
+- Generate candlestick graphs first.
 ![sample](https://github.com/hardyqr/CNN-for-Stock-Market-Prediction/blob/master/screen_shots_logs/sample.png)
 
 Input: candlestick graphs
