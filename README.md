@@ -8,7 +8,7 @@
 
 update: 
 
-Related paper: [Trading via Image Classification](https://arxiv.org/pdf/1907.10046.pdf) (NeurIPS 2019)
+Related paper: [Trading via Image Classification](https://arxiv.org/pdf/1907.10046.pdf) (by J.P. Morgan)
 
 
 ## Two Approaches
