@@ -6,6 +6,11 @@
 
 - Pytorch implementation
 
+update: 
+
+Related paper: [Trading via Image Classification](https://arxiv.org/pdf/1907.10046.pdf)(NIPS 2019)
+
+
 ## Two Approaches
 ### Approach 1
 - `cnn4matrix.py`
